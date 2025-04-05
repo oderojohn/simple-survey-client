@@ -1,241 +1,235 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { fetchQuestions, submitResponses } from "../services/apiservice";
 import "../assets/css/SurveyForm.css";
 
-const SurveyForm = () => {
+const Response = () => {
+  const [questions, setQuestions] = useState([]);
+  const [responses, setResponses] = useState({});
   const [currentStep, setCurrentStep] = useState(0);
-  const [formData, setFormData] = useState({
-    fullName: "",
-    email: "",
-    description: "",
-    gender: "",
-    programmingStack: [],
-    certificates: []
-  });
+  const [submitted, setSubmitted] = useState(false);
+  const [errors, setErrors] = useState({});
 
-  const steps = [
-    "Full Name",
-    "Email Address",
-    "Description",
-    "Gender",
-    "Programming Stack",
-    "Certificates",
-    "Preview & Submit"
-  ];
+  useEffect(() => {
+    fetchQuestions()
+      .then(data => {
+        console.log('Fetched questions:', data); // Debug log to inspect the response
+        setQuestions(data.questions || []); // Ensure the structure is correct
+      })
+      .catch(err => console.error("Error fetching questions:", err));
+  }, []);
+
+  const handleChange = (name, value) => {
+    setResponses(prev => ({ ...prev, [name]: value }));
+    setErrors(prev => ({ ...prev, [name]: undefined }));
+  };
+
+  const validateCurrentStep = () => {
+    const currentQ = questions[currentStep];
+    if (currentQ.required !== "yes") return true;
+
+    const response = responses[currentQ.name];
+
+    switch(currentQ.type) {
+      case 'short_text':
+      case 'email':
+      case 'long_text':
+        return !!response?.trim();
+      case 'choice':
+        if (currentQ.options?.multiple === "yes") {
+          return Array.isArray(response) && response.length > 0;
+        }
+        return !!response;
+      case 'file':
+        return response?.length > 0;
+      default:
+        return true;
+    }
+  };
 
   const handleNext = () => {
-    if (currentStep === 0 && !formData.fullName) {
-      alert("Please enter your full name.");
+    const currentQ = questions[currentStep];
+    if (!validateCurrentStep()) {
+      setErrors(prev => ({ ...prev, [currentQ.name]: "This field is required" }));
       return;
     }
-    if (currentStep === 1 && !formData.email) {
-      alert("Please enter your email address.");
-      return;
+
+    if (currentStep < questions.length - 1) {
+      setCurrentStep(prev => prev + 1);
+    } else {
+      handleSubmit();
     }
-    setCurrentStep((prev) => prev + 1);
   };
 
-  const handlePrev = () => {
-    setCurrentStep((prev) => prev - 1);
+  const handlePrevious = () => {
+    setCurrentStep(prev => Math.max(0, prev - 1));
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log("Submitting Form Data:", formData);
-    alert("Form submitted! Check the console for details.");
-  };
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  // Handle checkbox changes for programming stack (multiple selections)
-  const handleCheckbox = (e) => {
-    const { value, checked } = e.target;
-    setFormData((prev) => {
-      let updatedStack = [...prev.programmingStack];
-      if (checked) {
-        updatedStack.push(value);
+  const handleSubmit = () => {
+    const formData = new FormData();
+    
+    Object.entries(responses).forEach(([key, value]) => {
+      if (value instanceof FileList) {
+        Array.from(value).forEach(file => formData.append(key, file));
+      } else if (Array.isArray(value)) {
+        value.forEach(item => formData.append(key, item));
       } else {
-        updatedStack = updatedStack.filter((item) => item !== value);
+        formData.append(key, value);
       }
-      return { ...prev, programmingStack: updatedStack };
     });
+
+    submitResponses(formData)
+      .then(() => setSubmitted(true))
+      .catch(err => console.error("Error submitting responses:", err));
   };
 
-  // Handle file upload changes
-  const handleFileUpload = (e) => {
-    setFormData((prev) => ({ ...prev, certificates: [...e.target.files] }));
+  const renderQuestion = (q) => {
+    if (!q) return null;
+
+    // Ensure all necessary keys exist in options and file_properties
+    const options = q.options || {};
+    const fileProperties = q.file_properties || {};
+
+    switch(q.type) {
+      case 'short_text':
+        return (
+          <>
+            <label>{q.text}{q.required === "yes" && <span className="required">*</span>}</label>
+            {q.description && <p className="description">{q.description}</p>}
+            <input
+              type="text"
+              value={responses[q.name] || ""}
+              onChange={e => handleChange(q.name, e.target.value)}
+            />
+          </>
+        );
+
+      case 'email':
+        return (
+          <>
+            <label>{q.text}{q.required === "yes" && <span className="required">*</span>}</label>
+            <input
+              type="email"
+              value={responses[q.name] || ""}
+              onChange={e => handleChange(q.name, e.target.value)}
+            />
+          </>
+        );
+
+      case 'long_text':
+        return (
+          <>
+            <label>{q.text}{q.required === "yes" && <span className="required">*</span>}</label>
+            <textarea
+              value={responses[q.name] || ""}
+              onChange={e => handleChange(q.name, e.target.value)}
+            />
+          </>
+        );
+
+      case 'choice':
+        return (
+          <>
+            <label>{q.text}{q.required === "yes" && <span className="required">*</span>}</label>
+            <div className="options-container">
+              {options.values?.map(option => (
+                <label key={option} className="option-item">
+                  {options.multiple === "yes" ? (
+                    <input
+                      type="checkbox"
+                      checked={(responses[q.name] || []).includes(option)}
+                      onChange={e => {
+                        const selected = responses[q.name] || [];
+                        const newSelected = e.target.checked
+                          ? [...selected, option]
+                          : selected.filter(item => item !== option);
+                        handleChange(q.name, newSelected);
+                      }}
+                    />
+                  ) : (
+                    <input
+                      type="radio"
+                      name={q.name}
+                      value={option}
+                      checked={responses[q.name] === option}
+                      onChange={e => handleChange(q.name, e.target.value)}
+                    />
+                  )}
+                  <span>{option}</span>
+                </label>
+              ))}
+            </div>
+          </>
+        );
+
+      case 'file':
+        return (
+          <>
+            <label>{q.text}{q.required === "yes" && <span className="required">*</span>}</label>
+            {q.description && <p className="description">{q.description}</p>}
+            <input
+              type="file"
+              accept={fileProperties.format}
+              multiple={fileProperties.multiple === "yes"}
+              onChange={e => handleChange(q.name, e.target.files)}
+            />
+          </>
+        );
+
+      default:
+        return null;
+    }
   };
 
   return (
     <div className="survey-container">
-      {/* Form Details Section */}
       <div className="form-details">
-        <h2>Survey Form</h2>
-        <p>Please fill out the following details. This form will help us get to know more about you and your skills. You can review your information before submitting.</p>
-      </div>
-
-      <div className="step-header">
-        <h2>{steps[currentStep]}</h2>
-        <div className="progress-indicator">
-          Step {currentStep + 1} of {steps.length}
+        <h2>Answer Survey Questions</h2>
+        <p>Please fill out your answers below and click submit when done.</p>
+        <div className="progress">
+          Question {currentStep + 1} of {questions.length}
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="survey-form">
-        {/* Step 1: Full Name */}
-        {currentStep === 0 && (
+      {questions.length === 0 ? (
+        <p>Loading questions...</p>
+      ) : submitted ? (
+        <div className="confirmation">
+          <p>Thank you! Your responses have been submitted.</p>
+          <button className="btn-submit" onClick={() => window.location.reload()}>
+            Respond Again
+          </button>
+        </div>
+      ) : (
+        <form className="survey-form">
           <div className="form-group">
-            <label htmlFor="fullName">What is your full name?</label>
-            <input
-              type="text"
-              id="fullName"
-              name="fullName"
-              placeholder="e.g., Jane Doe"
-              value={formData.fullName}
-              onChange={handleChange}
-              required
-            />
+            {renderQuestion(questions[currentStep])}
+            {errors[questions[currentStep]?.name] && (
+              <p className="error-message">{errors[questions[currentStep].name]}</p>
+            )}
           </div>
-        )}
 
-        {currentStep === 1 && (
-          <div className="form-group">
-            <label htmlFor="email">What is your email address?</label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              placeholder="e.g., janedoe@gmail.com"
-              value={formData.email}
-              onChange={handleChange}
-              required
-            />
-          </div>
-        )}
-
-        {currentStep === 2 && (
-          <div className="form-group">
-            <label htmlFor="description">Tell us a bit more about yourself</label>
-            <textarea
-              id="description"
-              name="description"
-              placeholder="Enter description..."
-              value={formData.description}
-              onChange={handleChange}
-              required
-            />
-          </div>
-        )}
-
-        {currentStep === 3 && (
-          <div className="form-group">
-            <label htmlFor="gender">What is your gender?</label>
-            <select
-              id="gender"
-              name="gender"
-              value={formData.gender}
-              onChange={handleChange}
-              required
+          <div className="navigation-buttons">
+            {currentStep > 0 && (
+              <button
+                type="button"
+                onClick={handlePrevious}
+                className="btn-prev"
+              >
+                Previous
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={handleNext}
+              className="btn-next"
             >
-              <option value="">Select Gender</option>
-              <option value="MALE">Male</option>
-              <option value="FEMALE">Female</option>
-              <option value="OTHER">Other</option>
-            </select>
-          </div>
-        )}
-
-        {currentStep === 4 && (
-          <div className="form-group">
-            <label>What programming stack are you familiar with?</label>
-            <p>You can select multiple</p>
-            <div className="checkbox-group">
-              {[
-                { value: "REACT", label: "React JS" },
-                { value: "ANGULAR", label: "Angular JS" },
-                { value: "VUE", label: "Vue JS" },
-                { value: "SQL", label: "SQL" },
-                { value: "POSTGRES", label: "Postgres" },
-                { value: "MYSQL", label: "MySQL" },
-                { value: "MSSQL", label: "Microsoft SQL Server" },
-                { value: "Java", label: "Java" },
-                { value: "PHP", label: "PHP" },
-                { value: "GO", label: "Go" },
-                { value: "RUST", label: "Rust" }
-              ].map((option) => (
-                <label key={option.value}>
-                  <input
-                    type="checkbox"
-                    value={option.value}
-                    onChange={handleCheckbox}
-                  />
-                  {option.label}
-                </label>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {currentStep === 5 && (
-          <div className="form-group">
-            <label>Upload any of your certificates? (.pdf only)</label>
-            <p>You can upload multiple (.pdf, max 1MB each)</p>
-            <input
-              type="file"
-              accept=".pdf"
-              multiple
-              onChange={handleFileUpload}
-              required
-            />
-          </div>
-        )}
-
-        {currentStep === 6 && (
-          <div className="form-group preview">
-            <h3>Review Your Information</h3>
-            <p>
-              <strong>Full Name:</strong> {formData.fullName}
-            </p>
-            <p>
-              <strong>Email:</strong> {formData.email}
-            </p>
-            <p>
-              <strong>Description:</strong> {formData.description}
-            </p>
-            <p>
-              <strong>Gender:</strong> {formData.gender}
-            </p>
-            <p>
-              <strong>Programming Stack:</strong> {formData.programmingStack.join(", ")}
-            </p>
-            <p>
-              <strong>Certificates:</strong> {formData.certificates.length} file(s) selected
-            </p>
-          </div>
-        )}
-
-        <div className="navigation-buttons">
-          {currentStep > 0 && (
-            <button type="button" onClick={handlePrev} className="btn-prev">
-              Previous
+              {currentStep === questions.length - 1 ? "Submit" : "Next"}
             </button>
-          )}
-          {currentStep < steps.length - 1 && (
-            <button type="button" onClick={handleNext} className="btn-next">
-              Next
-            </button>
-          )}
-          {currentStep === steps.length - 1 && (
-            <button type="submit" className="btn-submit">
-              Submit
-            </button>
-          )}
-        </div>
-      </form>
+          </div>
+        </form>
+      )}
     </div>
   );
 };
 
-export default SurveyForm;
+export default Response;
