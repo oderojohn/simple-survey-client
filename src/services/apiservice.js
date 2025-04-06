@@ -1,10 +1,10 @@
 import axios from "axios";
 
-const API_BASE = "https://5d7289d1-e281-4ffd-9e97-213a05bf3426.mock.pstmn.io/survey/allquestions";
+const API_BASE = "http://127.0.0.1:8000/api";
 
 export const fetchQuestions = async () => {
   try {
-    const response = await axios.get(API_BASE);
+    const response = await axios.get(`${API_BASE}/questions/`);  // Correct endpoint for fetching questions
     console.log("Fetched questions:", response.data);
     return response.data;
   } catch (error) {
@@ -23,7 +23,7 @@ export const submitResponses = async (formData) => {
   }
 
   try {
-    const response = await axios.put(`${API_BASE}/responses`, formData, {
+    const response = await axios.post(`${API_BASE}/responses/`, formData, {  // Changed to POST
       headers: {
         'Content-Type': 'multipart/form-data'
       }
