@@ -1,19 +1,25 @@
 import React, { useEffect, useState } from "react";
 import { fetchQuestions, submitResponses } from "../services/apiservice";
 import "../assets/css/SurveyForm.css";
+import { useNavigate } from "react-router-dom";
 
-const Response = () => {
+const Survey = () => {
   const [questions, setQuestions] = useState([]);
   const [responses, setResponses] = useState({});
   const [currentStep, setCurrentStep] = useState(0);
   const [submitted, setSubmitted] = useState(false);
   const [errors, setErrors] = useState({});
+  const [showReview, setShowReview] = useState(false);
+  const navigate = useNavigate();
+
+  const handleGoToResponse = () => {
+    navigate("/response");
+  };
 
   useEffect(() => {
     fetchQuestions()
       .then(data => {
-        console.log('Fetched questions:', data); // Debug log to inspect the response
-        setQuestions(data.questions || []); // Ensure the structure is correct
+        setQuestions(data.questions || []);
       })
       .catch(err => console.error("Error fetching questions:", err));
   }, []);
@@ -56,17 +62,18 @@ const Response = () => {
     if (currentStep < questions.length - 1) {
       setCurrentStep(prev => prev + 1);
     } else {
-      handleSubmit();
+      setShowReview(true);
     }
   };
 
   const handlePrevious = () => {
     setCurrentStep(prev => Math.max(0, prev - 1));
   };
-
   const handleSubmit = () => {
     const formData = new FormData();
-    
+    console.log("Submitting responses:", responses);
+  
+    // Iterate over the responses and append them to FormData
     Object.entries(responses).forEach(([key, value]) => {
       if (value instanceof FileList) {
         Array.from(value).forEach(file => formData.append(key, file));
@@ -76,12 +83,70 @@ const Response = () => {
         formData.append(key, value);
       }
     });
-
+  
+    // Log the FormData entries (this is a workaround since FormData isn't directly printable)
+    for (let pair of formData.entries()) {
+      console.log(`${pair[0]}: ${pair[1]}`);
+    }
+  
+    // Now call submitResponses to send FormData
     submitResponses(formData)
       .then(() => setSubmitted(true))
       .catch(err => console.error("Error submitting responses:", err));
   };
+  
+  
 
+  const Review = ({ questions, responses, onEdit, onSubmit }) => {
+    const formatResponse = (question, response) => {
+      if (!response) return "No response";
+      
+      switch(question.type) {
+        case 'choice':
+          return question.options.multiple === "yes" 
+            ? response.join(", ")
+            : response;
+        case 'file':
+          return Array.from(response).map(file => file.name).join(", ");
+        default:
+          return response;
+      }
+    };
+
+    return (
+      <div className="review-container">
+        <h3>Review Your Answers</h3>
+        {questions.map((q, index) => (
+          <div key={q.name} className="review-item">
+            <h4>{q.text}{q.required === "yes" && <span className="required">*</span>}</h4>
+            <p>{formatResponse(q, responses[q.name])}</p>
+            <button 
+              className="btn-edit"
+              onClick={() => onEdit(index)}
+            >
+              Edit
+            </button>
+          </div>
+        ))}
+        <div className="review-buttons">
+          <button
+            type="button"
+            className="btn-prev"
+            onClick={() => setShowReview(false)}
+          >
+            Back
+          </button>
+          <button
+            type="button"
+            className="btn-submit"
+            onClick={onSubmit}
+          >
+            Submit
+          </button>
+        </div>
+      </div>
+    );
+  };
   const renderQuestion = (q) => {
     if (!q) return null;
 
@@ -185,8 +250,14 @@ const Response = () => {
       <div className="form-details">
         <h2>Answer Survey Questions</h2>
         <p>Please fill out your answers below and click submit when done.</p>
+        <button onClick={handleGoToResponse}>Go to Response</button>
+
         <div className="progress">
-          Question {currentStep + 1} of {questions.length}
+          {showReview ? (
+            "Review your answers"
+          ) : (
+            `Question ${currentStep + 1} of ${questions.length}`
+          )}
         </div>
       </div>
 
@@ -199,6 +270,16 @@ const Response = () => {
             Respond Again
           </button>
         </div>
+      ) : showReview ? (
+        <Review
+          questions={questions}
+          responses={responses}
+          onEdit={(index) => {
+            setCurrentStep(index);
+            setShowReview(false);
+          }}
+          onSubmit={handleSubmit}
+        />
       ) : (
         <form className="survey-form">
           <div className="form-group">
@@ -223,7 +304,7 @@ const Response = () => {
               onClick={handleNext}
               className="btn-next"
             >
-              {currentStep === questions.length - 1 ? "Submit" : "Next"}
+              {currentStep === questions.length - 1 ? "Review" : "Next"}
             </button>
           </div>
         </form>
@@ -232,4 +313,4 @@ const Response = () => {
   );
 };
 
-export default Response;
+export default Survey;

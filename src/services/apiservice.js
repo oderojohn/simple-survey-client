@@ -13,9 +13,22 @@ export const fetchQuestions = async () => {
   }
 };
 
-export const submitResponses = async (responses) => {
+// ✅ Updated to send FormData directly
+export const submitResponses = async (formData) => {
+  console.log("Submitting responses:");
+  
+  // Log each form data entry
+  for (let [key, value] of formData.entries()) {
+    console.log(`${key}:`, value);
+  }
+
   try {
-    await axios.put(`${API_BASE}/responses`, { responses });
+    const response = await axios.put(`${API_BASE}/responses`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+    console.log("Submitted successfully:", response.data);
   } catch (error) {
     console.error("Failed to submit responses:", error);
     throw error;
