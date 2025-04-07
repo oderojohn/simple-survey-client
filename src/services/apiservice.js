@@ -15,22 +15,45 @@ export const fetchQuestions = async () => {
 
 // ✅ Updated to send FormData directly
 export const submitResponses = async (formData) => {
-  console.log("Submitting responses:");
-  
-  // Log each form data entry
-  for (let [key, value] of formData.entries()) {
-    console.log(`${key}:`, value);
-  }
-
   try {
-    const response = await axios.post(`${API_BASE}/responses/`, formData, {  // Changed to POST
+    const response = await axios.post(`${API_BASE}/responses/`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
     });
-    console.log("Submitted successfully:", response.data);
+    return response.data;
   } catch (error) {
-    console.error("Failed to submit responses:", error);
+    console.error("Failed to submit responses:", error.response?.data || error.message);
+    throw error;
+  }
+};
+
+export const fetchAllResponses = async () => {
+  try {
+    const response = await axios.get(`${API_BASE}/responses/`);
+    console.log("Fetched responses:", response.data);
+    return response.data; 
+  } catch (error) {
+    console.error("Failed to fetch responses:", error);
+    throw error;
+  }
+};
+
+export const downloadCertificate = async (certificateId) => {
+  try {
+    const response = await axios.get(`${API_BASE}/download-certificate/${certificateId}/`, {
+      responseType: 'blob',
+    });
+
+    const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `certificate_${certificateId}.pdf`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  } catch (error) {
+    console.error("Failed to download certificate:", error.response?.data || error.message);
     throw error;
   }
 };
