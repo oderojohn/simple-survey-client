@@ -28,16 +28,25 @@ export const submitResponses = async (formData) => {
   }
 };
 
-export const fetchAllResponses = async () => {
+// src/services/apiservice.js
+
+export const fetchAllResponses = async ({ page = 1, pageSize = 5, email = "" } = {}) => {
   try {
-    const response = await axios.get(`${API_BASE}/responses/`);
-    console.log("Fetched responses:", response.data);
-    return response.data; 
+    const response = await axios.get(`${API_BASE}/responses/`, {
+      params: {
+        page,
+        page_size: pageSize,
+        email_address: email, 
+      },
+    });
+    console.log("Fetched paginated/filtered responses:", response.data);
+    return response.data;
   } catch (error) {
     console.error("Failed to fetch responses:", error);
     throw error;
   }
 };
+
 
 export const downloadCertificate = async (certificateId) => {
   try {

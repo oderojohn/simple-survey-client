@@ -3,68 +3,67 @@ import React, { useEffect, useState } from "react";
 import { fetchAllResponses, downloadCertificate } from "../services/apiservice";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-  faDownload,
-  faSpinner,
+  faDownload, 
+  faSpinner, 
   faExclamationCircle,
-  faEnvelope,
-  faChevronLeft,
-  faChevronRight
+  faEnvelope, 
+  faChevronLeft, 
+  faChevronRight, 
+  faTimes,
+  faVenusMars,
+  faFileAlt,
+  faCode,
+  faCertificate
 } from '@fortawesome/free-solid-svg-icons';
-
 const ResponsePage = () => {
-  const [allResponses, setAllResponses] = useState([]);
-  const [displayedResponses, setDisplayedResponses] = useState([]);
+  const [responses, setResponses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [downloading, setDownloading] = useState({});
-  const [pagination, setPagination] = useState({
-    page: 1,
-    pageSize: 10,
-    total: 0
+  const [pagination, setPagination] = useState({ 
+    page: 1, 
+    pageSize: 5, 
+    total: 0 
   });
-  const [filters, setFilters] = useState({
-    email: ""
-  });
+  const [emailInput, setEmailInput] = useState("");
+  const [selectedResponse, setSelectedResponse] = useState(null);
 
   useEffect(() => {
-    const fetchResponses = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        const data = await fetchAllResponses();
-        setAllResponses(data.results?.question_responses || []);
+        const data = await fetchAllResponses({
+          page: pagination.page,
+          pageSize: pagination.pageSize,
+          email: emailInput,
+        });
+        setResponses(data.results?.question_responses || []);
         setPagination(prev => ({
           ...prev,
-          total: data.results?.question_responses?.length || 0
+          total: data.count || 0
         }));
         setError(null);
       } catch (err) {
         setError(err.message || "Failed to fetch responses");
-        setAllResponses([]);
+        setResponses([]);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchResponses();
-  }, []);
+    fetchData();
+  }, [pagination.page, pagination.pageSize, emailInput]);
 
-  useEffect(() => {
-    let filtered = [...allResponses];
-    if (filters.email) {
-      filtered = filtered.filter(response =>
-        response.email_address.toLowerCase().includes(filters.email.toLowerCase())
-      );
-    }
-    setPagination(prev => ({
-      ...prev,
-      total: filtered.length
-    }));
-    const startIndex = (pagination.page - 1) * pagination.pageSize;
-    const endIndex = startIndex + pagination.pageSize;
-    setDisplayedResponses(filtered.slice(startIndex, endIndex));
-  }, [allResponses, pagination.page, pagination.pageSize, filters.email]);
+  const handleSearchSubmit = () => {
+    setPagination(prev => ({ ...prev, page: 1 }));
+  };
 
-  const handleDownloadCertificate = async (responseId, fullName) => {
+  const handleRowClick = (response) => {
+    setSelectedResponse(response);
+  };
+
+  const handleDownloadCertificate = async (responseId, fullName, e) => {
+    e.stopPropagation();
     try {
       setDownloading(prev => ({ ...prev, [responseId]: true }));
       const response = await downloadCertificate(responseId);
@@ -93,15 +92,113 @@ const ResponsePage = () => {
   };
 
   const handleFilterChange = (e) => {
-    const { name, value } = e.target;
-    setFilters(prev => ({ ...prev, [name]: value }));
-    setPagination(prev => ({ ...prev, page: 1 }));
+    setEmailInput(e.target.value);
   };
 
   const totalPages = Math.ceil(pagination.total / pagination.pageSize);
 
   return (
     <div className="response-container">
+    
+{selectedResponse && (
+  <div className="response-modal">
+    <div className="modal-overlay" onClick={() => setSelectedResponse(null)} />
+    <div className="modal-card">
+      <div className="modal-header">
+        <h2 className="modal-title">
+          <span className="user-icon">👤</span>
+          {selectedResponse.full_name}'s Details
+        </h2>
+        <button 
+          className="close-button"
+          onClick={() => setSelectedResponse(null)}
+          aria-label="Close"
+        >
+          <FontAwesomeIcon icon={faTimes} />
+        </button>
+      </div>
+      
+      <div className="modal-body">
+        <div className="detail-grid">
+          <div className="detail-item">
+            <label className="detail-label">
+              <FontAwesomeIcon icon={faEnvelope} className="detail-icon" />
+              Email
+            </label>
+            <p className="detail-value">
+              <a 
+                href={`mailto:${selectedResponse.email_address}`}
+                className="email-link"
+              >
+                {selectedResponse.email_address}
+              </a>
+            </p>
+          </div>
+
+          <div className="detail-item">
+            <label className="detail-label">
+              <FontAwesomeIcon icon={faVenusMars} className="detail-icon" />
+              Gender
+            </label>
+            <p className="detail-value">{selectedResponse.gender}</p>
+          </div>
+
+          <div className="detail-item full-width">
+            <label className="detail-label">
+              <FontAwesomeIcon icon={faFileAlt} className="detail-icon" />
+              Description
+            </label>
+            <p className="detail-value description-text">
+              {selectedResponse.description || "No description provided"}
+            </p>
+          </div>
+
+          <div className="detail-item full-width">
+            <label className="detail-label">
+              <FontAwesomeIcon icon={faCode} className="detail-icon" />
+              Programming Stack
+            </label>
+            <div className="tech-stack">
+              {Array.isArray(selectedResponse.programming_stack) ? (
+                selectedResponse.programming_stack.map((tech, index) => (
+                  <span key={index} className="tech-badge">
+                    {tech}
+                  </span>
+                ))
+              ) : (
+                <span className="tech-badge">
+                  {selectedResponse.programming_stack}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {selectedResponse.certificates?.length > 0 && (
+            <div className="detail-item full-width">
+              <label className="detail-label">
+                <FontAwesomeIcon icon={faCertificate} className="detail-icon" />
+                Certificates
+              </label>
+              <div className="certificate-list">
+                {selectedResponse.certificates.map((cert, index) => (
+                  <div key={index} className="certificate-item">
+                    <span className="cert-name">{cert.file.name}</span>
+                    <button 
+                      className="download-link"
+                      onClick={(e) => handleDownloadCertificate(selectedResponse.id, selectedResponse.full_name, e)}
+                    >
+                      <FontAwesomeIcon icon={faDownload} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  </div>
+)}
       <div className="response-header">
         <h1>Survey Responses</h1>
         <p className="subtitle">View all submitted survey responses</p>
@@ -115,11 +212,18 @@ const ResponsePage = () => {
               type="text"
               id="email"
               name="email"
-              value={filters.email}
+              value={emailInput}
               onChange={handleFilterChange}
               placeholder="Filter by email address"
               className="filter-input"
+              onKeyPress={(e) => e.key === 'Enter' && handleSearchSubmit()}
             />
+            <button 
+              className="search-button"
+              onClick={handleSearchSubmit}
+            >
+              Search
+            </button>
           </div>
         </div>
       </div>
@@ -155,8 +259,12 @@ const ResponsePage = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {displayedResponses.map((response, index) => (
-                    <tr key={response.id || index}>
+                  {responses.map((response, index) => (
+                    <tr 
+                      key={response.id || index}
+                      onClick={() => handleRowClick(response)}
+                      className="clickable-row"
+                    >
                       <td>{(pagination.page - 1) * pagination.pageSize + index + 1}</td>
                       <td>{response.full_name}</td>
                       <td>
@@ -171,14 +279,14 @@ const ResponsePage = () => {
                       </td>
                       <td>{response.gender}</td>
                       <td>
-                        {Array.isArray(response.programming_stack) 
-                          ? response.programming_stack.join(", ") 
+                        {Array.isArray(response.programming_stack)
+                          ? response.programming_stack.join(", ")
                           : response.programming_stack}
                       </td>
                       <td>
                         <button
                           className={`download-button ${downloading[response.id] ? 'downloading' : ''}`}
-                          onClick={() => handleDownloadCertificate(response.id, response.full_name)}
+                          onClick={(e) => handleDownloadCertificate(response.id, response.full_name, e)}
                           disabled={downloading[response.id]}
                         >
                           {downloading[response.id] ? (
@@ -213,7 +321,7 @@ const ResponsePage = () => {
                   </span>
                   <button
                     onClick={() => handlePageChange(pagination.page + 1)}
-                    disabled={pagination.page === totalPages || pagination.total === 0}
+                    disabled={pagination.page === totalPages}
                     className="pagination-button"
                   >
                     Next <FontAwesomeIcon icon={faChevronRight} />
