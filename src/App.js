@@ -1,7 +1,7 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
-import Survey from './components/surveyform';
-import ResponsePage from './components/ResponsePage';
+import Survey from './pages/Survey/SurveyContainer';
+import ResponsePage from './pages/ResponsePage/ResponsePage';
 
 function App() {
   return (

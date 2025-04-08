@@ -995,3 +995,26 @@ textarea {
   line-height: 1.5;
   color: #64748b;
 }
+.form-group {
+  margin-bottom: 1rem;
+}
+.error {
+  border: 1px solid red;
+}
+.error-message {
+  color: red;
+  font-size: 0.9rem;
+  margin-top: -0.5rem;
+  margin-bottom: 1rem;
+}
+.required {
+  color: red;
+}
+.navigation-buttons {
+  display: flex;
+  gap: 1rem;
+}
+.btn-next,
+.btn-prev {
+  padding: 0.5rem 1rem;
+}
