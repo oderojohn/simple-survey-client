@@ -11,12 +11,9 @@ const ResponsePage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [downloading, setDownloading] = useState({});
-  const [pagination, setPagination] = useState({ 
-    page: 1, 
-    pageSize: 5, 
-    total: 0 
-  });
+  const [pagination, setPagination] = useState({ page: 1, pageSize: 5, total: 0 });
   const [emailInput, setEmailInput] = useState("");
+  const [emailFilter, setEmailFilter] = useState("");
   const [selectedResponse, setSelectedResponse] = useState(null);
 
   useEffect(() => {
@@ -29,10 +26,7 @@ const ResponsePage = () => {
           email: emailInput,
         });
         setResponses(data.results?.question_responses || []);
-        setPagination(prev => ({
-          ...prev,
-          total: data.count || 0
-        }));
+        setPagination(prev => ({ ...prev, total: data.count || 0 }));
         setError(null);
       } catch (err) {
         setError(err.message || "Failed to fetch responses");
@@ -47,6 +41,7 @@ const ResponsePage = () => {
 
   const handleSearchSubmit = () => {
     setPagination(prev => ({ ...prev, page: 1 }));
+    setEmailInput(emailFilter);
   };
 
   const handleDownloadCertificate = async (responseId, fullName, e) => {
@@ -89,8 +84,8 @@ const ResponsePage = () => {
       </div>
 
       <FilterBar
-        emailInput={emailInput}
-        onFilterChange={(e) => setEmailInput(e.target.value)}
+        emailInput={emailFilter}
+        onFilterChange={(e) => setEmailFilter(e.target.value)}
         onSearchSubmit={handleSearchSubmit}
       />
 
@@ -111,15 +106,8 @@ const ResponsePage = () => {
             <PaginationControls
               pagination={pagination}
               totalPages={totalPages}
-              onPageChange={(newPage) => setPagination(prev => ({
-                ...prev,
-                page: newPage
-              }))}
-              onPageSizeChange={(newSize) => setPagination(prev => ({
-                ...prev,
-                pageSize: newSize,
-                page: 1
-              }))}
+              onPageChange={(newPage) => setPagination(prev => ({ ...prev, page: newPage }))}
+              onPageSizeChange={(newSize) => setPagination(prev => ({ ...prev, pageSize: newSize, page: 1 }))}
             />
           </>
         ) : (

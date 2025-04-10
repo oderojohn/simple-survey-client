@@ -118,63 +118,75 @@ const SurveyForm = ({
           </div>
         );
 
-      case "choice":
-        return (
-          <fieldset className="form-group">
-            <legend>
-              {question.text}
-              {question.required && <span className="required">*</span>}
-            </legend>
-            {question.options.map((opt) => {
-              const value = typeof opt === "object" ? opt.value : opt;
-              const label = typeof opt === "object" ? opt.text : opt;
-              const isMultiple = question.options?.multiple === "yes";
-
-              const checked = isMultiple
-                ? (responses[question.name] || []).includes(value)
-                : responses[question.name] === value;
-
-              return (
-                <label key={value} className="option-item">
-                  <input
-                    type={isMultiple ? "checkbox" : "radio"}
-                    name={question.name}
-                    value={value}
-                    checked={checked}
-                    onChange={(e) => {
-                      let updated;
-                      if (isMultiple) {
-                        const prev = responses[question.name] || [];
-                        updated = e.target.checked
-                          ? [...prev, value]
-                          : prev.filter((v) => v !== value);
-                      } else {
-                        updated = value;
-                      }
-                      handleChange(question.name, updated);
-                    }}
-                  />
-                  {label}
+        case "choice":
+          const isMultiple = question.name === "programming_stack"; 
+        
+          return (
+            <fieldset className="form-group">
+              <legend>
+                {question.text}
+                {question.required && <span className="required">*</span>}
+              </legend>
+              {question.description && (
+                <p className="question-description">{question.description}</p>
+              )}
+              {question.options.map((opt) => {
+                const value = typeof opt === "object" ? opt.value : opt;
+                const label = typeof opt === "object" ? opt.text : opt;
+        
+                const checked = isMultiple
+                  ? (responses[question.name] || []).includes(value)
+                  : responses[question.name] === value;
+        
+                return (
+                  <label key={value} className="option-item">
+                    <input
+                      type={isMultiple ? "checkbox" : "radio"}
+                      name={question.name}
+                      value={value}
+                      checked={checked}
+                      onChange={(e) => {
+                        let updated;
+                        if (isMultiple) {
+                          const prev = responses[question.name] || [];
+                          updated = e.target.checked
+                            ? [...prev, value]
+                            : prev.filter((v) => v !== value);
+                        } else {
+                          updated = value;
+                        }
+                        handleChange(question.name, updated);
+                      }}
+                    />
+                    {label}
+                  </label>
+                );
+              })}
+            </fieldset>
+          );
+        
+          case "file":
+            const allowMultiple = question.name === "certificates"; 
+          
+            return (
+              <div className="form-group">
+                <label>
+                  {question.text}
+                  {question.required && <span className="required">*</span>}
                 </label>
-              );
-            })}
-          </fieldset>
-        );
-
-      case "file":
-        return (
-          <div className="form-group">
-            {label}
-            <input
-              type="file"
-              multiple={question.file_properties?.multiple === true}
-              accept=".pdf,application/pdf"
-              onChange={(e) => handleChange(question.name, e.target.files)}
-              className={errors[question.name] ? "error" : ""}
-            />
-          </div>
-        );
-
+                {question.description && (
+                  <p className="question-description">{question.description}</p>
+                )}
+                <input
+                  type="file"
+                  multiple={allowMultiple}
+                  accept=".pdf,application/pdf"
+                  onChange={(e) => handleChange(question.name, e.target.files)}
+                  className={errors[question.name] ? "error" : ""}
+                />
+              </div>
+            );
+          
       default:
         return null;
     }
@@ -184,7 +196,7 @@ const SurveyForm = ({
     <form className="survey-form" onSubmit={(e) => e.preventDefault()}>
       {renderInput()}
       {errors[question?.name] && (
-        <div className="error-message">{errors[question.name]}</div>
+        <div className="error-message" >{errors[question.name]}</div>
       )}
       <div className="navigation-buttons">
         {currentStep > 0 && (

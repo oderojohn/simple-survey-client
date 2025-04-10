@@ -28,7 +28,7 @@ export const submitResponses = async (formData) => {
   }
 };
 
-// src/services/apiservice.js
+// Updated to handle pagination and filtering
 
 export const fetchAllResponses = async ({ page = 1, pageSize = 5, email = "" } = {}) => {
   try {
@@ -48,21 +48,47 @@ export const fetchAllResponses = async ({ page = 1, pageSize = 5, email = "" } =
 };
 
 
-export const downloadCertificate = async (certificateId) => {
+// export const downloadCertificate = async (certificateId) => {
+//   try {
+//     const response = await axios.get(`${API_BASE}/download-certificate/${certificateId}/`, {
+//       responseType: 'blob',
+//     });
+
+//     const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+//     const link = document.createElement('a');
+//     link.href = url;
+//     link.setAttribute('download', `certificate_${certificateId}.pdf`);
+//     document.body.appendChild(link);
+//     link.click();
+//     link.remove();
+//   } catch (error) {
+//     console.error("Failed to download certificate:", error.response?.data || error.message);
+//     throw error;
+//   }
+// };
+
+export const downloadCertificate = async (responseId) => {
   try {
-    const response = await axios.get(`${API_BASE}/download-certificate/${certificateId}/`, {
+    const response = await axios.get(`${API_BASE}/certificates/download/`, {
+      params: { response_id: responseId },
       responseType: 'blob',
     });
 
-    const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+    const contentDisposition = response.headers['content-disposition'];
+    const filenameMatch = contentDisposition?.match(/filename="?([^"]+)"?/);
+    const filename = filenameMatch ? filenameMatch[1] : `certificates_${responseId}`;
+
+    const blob = new Blob([response.data], { type: response.headers['content-type'] });
+    const url = window.URL.createObjectURL(blob);
+
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `certificate_${certificateId}.pdf`);
+    link.setAttribute('download', filename);
     document.body.appendChild(link);
     link.click();
     link.remove();
   } catch (error) {
-    console.error("Failed to download certificate:", error.response?.data || error.message);
+    console.error("Failed to download certificates:", error.response?.data || error.message);
     throw error;
   }
 };
