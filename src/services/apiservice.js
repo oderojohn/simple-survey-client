@@ -1,10 +1,10 @@
 import axios from "axios";
 
-const API_BASE = "http://127.0.0.1:8000/api";
+const API_BASE = "https://sky-survey-backend.onrender.com/api";
 
 export const fetchQuestions = async () => {
   try {
-    const response = await axios.get(`${API_BASE}/questions/`);  // Correct endpoint for fetching questions
+    const response = await axios.get(`${API_BASE}/questions/`);  
     console.log("Fetched questions:", response.data);
     return response.data;
   } catch (error) {
@@ -13,7 +13,7 @@ export const fetchQuestions = async () => {
   }
 };
 
-// ✅ Updated to send FormData directly
+// Updated to send FormData directly
 export const submitResponses = async (formData) => {
   try {
     const response = await axios.post(`${API_BASE}/responses/`, formData, {
