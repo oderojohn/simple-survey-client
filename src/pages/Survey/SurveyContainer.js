@@ -47,7 +47,7 @@ const SurveyContainer = () => {
   .catch((err) =>
     setFormError(err.response?.data?.message || "Submission failed.")
   );
-
+};
   return (
     <div className="survey-container">
       <div className="form-details">
