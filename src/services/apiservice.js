@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_BASE = "https://sky-survey-backend.onrender.com/api";
+const API_BASE = "http://127.0.0.1:8000/api";
 
 export const fetchQuestions = async () => {
   try {
@@ -15,6 +15,17 @@ export const fetchQuestions = async () => {
 
 //send FormData directly
 export const submitResponses = async (formData) => {
+  console.log("Submitting responses:");
+
+  // Log all key-value pairs in formData
+  for (let [key, value] of formData.entries()) {
+    if (value instanceof File) {
+      console.log(`${key}:`, value.name, `(File)`);
+    } else {
+      console.log(`${key}:`, value);
+    }
+  }
+
   try {
     const response = await axios.post(`${API_BASE}/responses/`, formData, {
       headers: {
@@ -28,6 +39,7 @@ export const submitResponses = async (formData) => {
     throw error;
   }
 };
+
 
 // Updated to handle pagination and filtering
 
@@ -49,24 +61,7 @@ export const fetchAllResponses = async ({ page = 1, pageSize = 5, email = "" } =
 };
 
 
-// export const downloadCertificate = async (certificateId) => {
-//   try {
-//     const response = await axios.get(`${API_BASE}/download-certificate/${certificateId}/`, {
-//       responseType: 'blob',
-//     });
 
-//     const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
-//     const link = document.createElement('a');
-//     link.href = url;
-//     link.setAttribute('download', `certificate_${certificateId}.pdf`);
-//     document.body.appendChild(link);
-//     link.click();
-//     link.remove();
-//   } catch (error) {
-//     console.error("Failed to download certificate:", error.response?.data || error.message);
-//     throw error;
-//   }
-// };
 
 export const downloadCertificate = async (responseId) => {
   try {
@@ -89,7 +84,17 @@ export const downloadCertificate = async (responseId) => {
     link.click();
     link.remove();
   } catch (error) {
-    console.error("Failed to download certificates:", error.response?.data || error.message);
+    // Check if the error has a response (server-side issue)
+    if (error.response) {
+      console.error("Failed to download certificates (Server Response):", error.response.data);
+      console.error("HTTP Status Code:", error.response.status);
+    } 
+    // If there is no response (network or request issue)
+    else {
+      console.error("Failed to download certificates (Network/Request Error):", error.message);
+    }
+
+    // Re-throw the error for further handling if necessary
     throw error;
   }
 };

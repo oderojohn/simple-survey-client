@@ -11,6 +11,8 @@ const SurveyForm = ({
   setShowReview,
 }) => {
   const question = questions[currentStep];
+  const MAX_FILE_SIZE_MB = 10;
+  const MAX_FILES_ALLOWED = 2;
 
   const isValidEmail = (email) => {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -40,10 +42,15 @@ const SurveyForm = ({
 
       case "file":
         if (!response || response.length === 0) return false;
-        return Array.from(response).every(
+
+        const files = Array.from(response);
+        if (files.length > MAX_FILES_ALLOWED) return false;
+
+        return files.every(
           (file) =>
-            file.type === "application/pdf" ||
-            file.name.toLowerCase().endsWith(".pdf")
+            file.size <= MAX_FILE_SIZE_MB * 1024 * 1024 &&
+            (file.type === "application/pdf" ||
+              file.name.toLowerCase().endsWith(".pdf"))
         );
 
       default:
@@ -61,9 +68,18 @@ const SurveyForm = ({
           ? "Please enter a valid email address"
           : "This field is required";
       } else if (question.type === "file") {
-        errorMsg = !response?.length
-          ? "Please select at least one PDF file"
-          : "Only PDF files are allowed";
+        const files = Array.from(response || []);
+        if (files.length === 0) {
+          errorMsg = "Please select at least one PDF file";
+        } else if (files.length > MAX_FILES_ALLOWED) {
+          errorMsg = `You can upload a maximum of ${MAX_FILES_ALLOWED} files`;
+        } else if (
+          files.some((file) => file.size > MAX_FILE_SIZE_MB * 1024 * 1024)
+        ) {
+          errorMsg = `Each file must be less than ${MAX_FILE_SIZE_MB}MB`;
+        } else {
+          errorMsg = "Only PDF files are allowed";
+        }
       }
 
       setErrors((prev) => ({ ...prev, [question.name]: errorMsg }));
@@ -118,75 +134,93 @@ const SurveyForm = ({
           </div>
         );
 
-        case "choice":
-          const isMultiple = question.name === "programming_stack"; 
-        
-          return (
-            <fieldset className="form-group">
-              <legend>
-                {question.text}
-                {question.required && <span className="required">*</span>}
-              </legend>
-              {question.description && (
-                <p className="question-description">{question.description}</p>
-              )}
-              {question.options.map((opt) => {
-                const value = typeof opt === "object" ? opt.value : opt;
-                const label = typeof opt === "object" ? opt.text : opt;
-        
-                const checked = isMultiple
-                  ? (responses[question.name] || []).includes(value)
-                  : responses[question.name] === value;
-        
-                return (
-                  <label key={value} className="option-item">
-                    <input
-                      type={isMultiple ? "checkbox" : "radio"}
-                      name={question.name}
-                      value={value}
-                      checked={checked}
-                      onChange={(e) => {
-                        let updated;
-                        if (isMultiple) {
-                          const prev = responses[question.name] || [];
-                          updated = e.target.checked
-                            ? [...prev, value]
-                            : prev.filter((v) => v !== value);
-                        } else {
-                          updated = value;
-                        }
-                        handleChange(question.name, updated);
-                      }}
-                    />
-                    {label}
-                  </label>
-                );
-              })}
-            </fieldset>
-          );
-        
-          case "file":
-            const allowMultiple = question.name === "certificates"; 
-          
-            return (
-              <div className="form-group">
-                <label>
-                  {question.text}
-                  {question.required && <span className="required">*</span>}
+      case "choice":
+        const isMultiple = question.name === "programming_stack";
+
+        return (
+          <fieldset className="form-group">
+            <legend>
+              {question.text}
+              {question.required && <span className="required">*</span>}
+            </legend>
+            {question.description && (
+              <p className="question-description">{question.description}</p>
+            )}
+            {question.options.map((opt) => {
+              const value = typeof opt === "object" ? opt.value : opt;
+              const label = typeof opt === "object" ? opt.text : opt;
+
+              const checked = isMultiple
+                ? (responses[question.name] || []).includes(value)
+                : responses[question.name] === value;
+
+              return (
+                <label key={value} className="option-item">
+                  <input
+                    type={isMultiple ? "checkbox" : "radio"}
+                    name={question.name}
+                    value={value}
+                    checked={checked}
+                    onChange={(e) => {
+                      let updated;
+                      if (isMultiple) {
+                        const prev = responses[question.name] || [];
+                        updated = e.target.checked
+                          ? [...prev, value]
+                          : prev.filter((v) => v !== value);
+                      } else {
+                        updated = value;
+                      }
+                      handleChange(question.name, updated);
+                    }}
+                  />
+                  {label}
                 </label>
-                {question.description && (
-                  <p className="question-description">{question.description}</p>
-                )}
-                <input
-                  type="file"
-                  multiple={allowMultiple}
-                  accept=".pdf,application/pdf"
-                  onChange={(e) => handleChange(question.name, e.target.files)}
-                  className={errors[question.name] ? "error" : ""}
-                />
-              </div>
-            );
-          
+              );
+            })}
+          </fieldset>
+        );
+
+      case "file":
+        const allowMultiple = question.name === "certificates";
+
+        return (
+          <div className="form-group">
+            <label>
+              {question.text}
+              {question.required && <span className="required">*</span>}
+            </label>
+            {question.description && (
+              <p className="question-description">{question.description}</p>
+            )}
+            <input
+              type="file"
+              multiple={allowMultiple}
+              accept=".pdf,application/pdf"
+              onChange={(e) => {
+                const files = Array.from(e.target.files);
+                if (files.length > MAX_FILES_ALLOWED) {
+                  setErrors((prev) => ({
+                    ...prev,
+                    [question.name]: `Max ${MAX_FILES_ALLOWED} files allowed.`,
+                  }));
+                } else if (
+                  files.some((file) => file.size > MAX_FILE_SIZE_MB * 1024 * 1024)
+                ) {
+                  setErrors((prev) => ({
+                    ...prev,
+                    [question.name]: `Each file must be under ${MAX_FILE_SIZE_MB}MB`,
+                  }));
+                } else {
+                  setErrors((prev) => ({ ...prev, [question.name]: null }));
+                  handleChange(question.name, e.target.files);
+                }
+              }}
+              className={errors[question.name] ? "error" : ""}
+            />
+          </div>
+        );
+
       default:
         return null;
     }
@@ -196,7 +230,7 @@ const SurveyForm = ({
     <form className="survey-form" onSubmit={(e) => e.preventDefault()}>
       {renderInput()}
       {errors[question?.name] && (
-        <div className="error-message" >{errors[question.name]}</div>
+        <div className="error-message">{errors[question.name]}</div>
       )}
       <div className="navigation-buttons">
         {currentStep > 0 && (

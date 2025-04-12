@@ -1,6 +1,6 @@
 /* SurveyForm.css */
 :root {
-  --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --primary-gradient: linear-gradient(135deg, #94a4ebad 0%, #764ba2 100%);
   --secondary-gradient: linear-gradient(45deg, #ff6b6b, #ff9f43);
   --glass-bg: rgba(255, 255, 255, 0.95);
   --glass-border: rgba(255, 255, 255, 0.3);
@@ -714,7 +714,7 @@ textarea {
   margin: 0 auto;
   padding: 2rem 1.5rem;
   font-family: 'Segoe UI', system-ui, sans-serif;
-  color: #2d3748;
+  color: #7f848b;
 }
 
 .response-header {

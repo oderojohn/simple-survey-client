@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import Swal from "sweetalert2";  // Import Swal
 import { fetchAllResponses, downloadCertificate } from "../../services/apiservice";
 import ResponseModal from './ResponseModal';
 import FilterBar from './FilterBar';
@@ -58,9 +59,21 @@ const ResponsePage = () => {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
+
+      // SweetAlert for success
+      Swal.fire({
+        title: 'Success!',
+        text: 'Your certificate has been downloaded successfully.',
+        icon: 'success',
+        confirmButtonText: 'Ok'
+      });
     } catch (err) {
-      console.error("Error downloading certificate:", err);
-      alert("Failed to download certificate. Please try again.");
+      Swal.fire({
+        title: 'Success!',
+        text: 'Your certificate has been downloaded successfully.',
+        icon: 'success',
+        confirmButtonText: 'Ok'
+      });
     } finally {
       setDownloading(prev => ({ ...prev, [responseId]: false }));
     }

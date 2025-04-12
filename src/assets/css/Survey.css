@@ -66,7 +66,7 @@
     background: #f7fafc;
     border-radius: 6px;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: background 0.4s;
   }
   
   .option-item:hover {
