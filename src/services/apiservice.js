@@ -13,7 +13,7 @@ export const fetchQuestions = async () => {
   }
 };
 
-// Updated to send FormData directly
+//send FormData directly
 export const submitResponses = async (formData) => {
   try {
     const response = await axios.post(`${API_BASE}/responses/`, formData, {
@@ -21,6 +21,7 @@ export const submitResponses = async (formData) => {
         'Content-Type': 'multipart/form-data'
       }
     });
+    console.log('Response:', response.data);
     return response.data;
   } catch (error) {
     console.error("Failed to submit responses:", error.response?.data || error.message);
