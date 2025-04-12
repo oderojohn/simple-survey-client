@@ -14,6 +14,8 @@ const SurveyContainer = () => {
   const [showReview, setShowReview] = useState(false);
   const [formError, setFormError] = useState(null);
   const navigate = useNavigate();
+  const [apiResponse, setApiResponse] = useState(null);
+
 
   useEffect(() => {
     fetchQuestions()
@@ -38,9 +40,13 @@ const SurveyContainer = () => {
       }
     });
     submitResponses(formData)
-      .then(() => setSubmitted(true))
-      .catch((err) => setFormError(err.response?.data?.message || "Submission failed."));
-  };
+  .then((data) => {
+    setApiResponse(data);
+    setSubmitted(true);
+  })
+  .catch((err) =>
+    setFormError(err.response?.data?.message || "Submission failed.")
+  );
 
   return (
     <div className="survey-container">
@@ -56,13 +62,14 @@ const SurveyContainer = () => {
       {questions.length === 0 && !formError ? (
         <p>Loading questions...</p>
       ) : submitted ? (
-        <div className="confirmation">
-          <h3>Thank you!</h3>
-          <p>Your responses have been submitted successfully.</p>
-          <button className="btn-submit" onClick={() => window.location.reload()}>
-            Submit Another Response
-          </button>
-        </div>
+          <div className="confirmation">
+    <h3>Thank you!</h3>
+    <p>Your responses have been submitted successfully.</p>
+    <pre>{JSON.stringify(apiResponse, null, 2)}</pre>
+    <button className="btn-submit" onClick={() => window.location.reload()}>
+      Submit Another Response
+    </button>
+  </div>
       ) : showReview ? (
         <SurveyReview
           questions={questions}
