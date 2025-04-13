@@ -12,7 +12,7 @@ const SurveyForm = ({
 }) => {
   const question = questions[currentStep];
   const MAX_FILE_SIZE_MB = 10;
-  const MAX_FILES_ALLOWED = 2;
+  const MAX_FILES_ALLOWED = 10;
 
   const isValidEmail = (email) => {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -104,12 +104,18 @@ const SurveyForm = ({
       value: value,
       onChange: (e) => handleChange(question.name, e.target.value),
       className: errors[question.name] ? "error" : "",
+      placeholder:
+        question.type === "email"
+          ? "Enter your email address"
+          : question.type === "short_text" &&
+            question.text.toLowerCase().includes("name")
+          ? "Enter your Surname , FirstName & OtherNames"
+          : undefined,
     };
 
     const label = (
       <label htmlFor={question.name}>
-        {question.text}{" "}
-        {question.required && <span className="required">*</span>}
+        {question.text} {question.required && <span className="required">*</span>}
       </label>
     );
 
@@ -183,6 +189,7 @@ const SurveyForm = ({
 
       case "file":
         const allowMultiple = question.name === "certificates";
+        const selectedFiles = Array.from(responses[question.name] || []);
 
         return (
           <div className="form-group">
@@ -193,19 +200,48 @@ const SurveyForm = ({
             {question.description && (
               <p className="question-description">{question.description}</p>
             )}
+            <div className="selected-files">
+              {selectedFiles.map((file, index) => (
+                <div key={index} className="file-item">
+                  <span>{file.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const updated = selectedFiles.filter((_, i) => i !== index);
+                      handleChange(question.name, updated);
+                    }}
+                    className="remove-file"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+            <button
+              type="button"
+              className="add-file-btn"
+              onClick={() => document.getElementById(`${question.name}-input`).click()}
+            >
+              + Add File
+            </button>
             <input
+              id={`${question.name}-input`}
               type="file"
               multiple={allowMultiple}
               accept=".pdf,application/pdf"
+              style={{ display: "none" }}
               onChange={(e) => {
-                const files = Array.from(e.target.files);
-                if (files.length > MAX_FILES_ALLOWED) {
+                const newFiles = Array.from(e.target.files);
+                const existingFiles = Array.from(responses[question.name] || []);
+                const allFiles = [...existingFiles, ...newFiles];
+
+                if (allFiles.length > MAX_FILES_ALLOWED) {
                   setErrors((prev) => ({
                     ...prev,
                     [question.name]: `Max ${MAX_FILES_ALLOWED} files allowed.`,
                   }));
                 } else if (
-                  files.some((file) => file.size > MAX_FILE_SIZE_MB * 1024 * 1024)
+                  allFiles.some((file) => file.size > MAX_FILE_SIZE_MB * 1024 * 1024)
                 ) {
                   setErrors((prev) => ({
                     ...prev,
@@ -213,8 +249,10 @@ const SurveyForm = ({
                   }));
                 } else {
                   setErrors((prev) => ({ ...prev, [question.name]: null }));
-                  handleChange(question.name, e.target.files);
+                  handleChange(question.name, allFiles);
                 }
+
+                e.target.value = null;
               }}
               className={errors[question.name] ? "error" : ""}
             />
