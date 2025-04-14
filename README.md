@@ -1,70 +1,173 @@
-# Getting Started with Create React App
+# Survey Application
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+##  Setup & Run Locally
 
-## Available Scripts
+###  Backend (REST API)
 
-In the project directory, you can run:
+1. **Clone the backend repository**
+   ```bash
+   git clone https://github.com/oderojohn/sky_survey_backend.git
+   cd survey-api
+   ```
 
-### `npm start`
+2. **Create and activate a virtual environment (recommended)**
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows use `venv\Scripts\activate`
+   ```
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+3. **Install dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+4. **Apply migrations and start the server**
+   ```bash
+   python manage.py migrate
+   python manage.py runserver
+   ```
 
-### `npm test`
+   The backend should now be running at [http://localhost:8000](http://localhost:8000)
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+---
 
-### `npm run build`
+### 💻 Frontend (React)
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+1. **Clone the frontend repository**
+   ```bash
+   git clone https://github.com/oderojohn/simple-survey-client.git
+   cd survey-frontend
+   ```
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+2. **Install dependencies**
+   ```bash
+   npm install
+   npm install sweetallerts
+   ```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+3. **Run the development server**
+   ```bash
+   npm run dev
+   ```
+   Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-### `npm run eject`
+---
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+## 📦 Deployment (Optional)
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+### Backend ( Render)
+1. Push your backend code to GitHub.
+2. Connect your GitHub repo to a deployment platform ( Render).
+3. Set necessary environment variables (e.g. `SECRET_KEY`, `DEBUG`, DB settings).
+4. Run initial migration and start server.
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+### Frontend ( Netlify)
+1. Push frontend code to GitHub.
+2. Connect the repo to Netlify.
+3. Set environment variable `simple-survey-client.netilify.app` to your backend URL.
+4. Deploy and access the frontend live.
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+---
 
-## Learn More
+##  Postman Collection JSON
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+```json
+{
+  "info": {
+    "name": "Survey API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Collection for testing survey API endpoints"
+  },
+  "item": [
+    {
+      "name": "Get Questions",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8000/api/questions/",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "questions"]
+        }
+      }
+    },
+    {
+      "name": "Submit Response (with Certificates)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            { "key": "full_name", "value": "John Doe", "type": "text" },
+            { "key": "email_address", "value": "john@example.com", "type": "text" },
+            { "key": "description", "value": "This is my survey response.", "type": "text" },
+            { "key": "gender", "value": "male", "type": "text" },
+            { "key": "programming_stack", "value": "Python, React", "type": "text" },
+            { "key": "certificates", "type": "file", "src": ["path/to/certificate1.pdf"] },
+            { "key": "certificates", "type": "file", "src": ["path/to/certificate2.pdf"] }
+          ]
+        },
+        "url": {
+          "raw": "http://localhost:8000/api/responses/",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "responses"]
+        }
+      }
+    },
+    {
+      "name": "Get Responses by Email",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8000/api/responses/?email_address=john@example.com",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "responses"],
+          "query": [
+            { "key": "email_address", "value": "john@example.com" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Download Certificate by ID",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8000/api/certificates/1/download/",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "certificates", "1", "download"]
+        }
+      }
+    },
+    {
+      "name": "Download All Certificates (Batch)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8000/api/certificates/batch-download/?response_id=1",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "certificates", "batch-download"],
+          "query": [
+            { "key": "response_id", "value": "1" }
+          ]
+        }
+      }
+    }
+  ]
+}
+```
 
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
