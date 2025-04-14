@@ -2,35 +2,6 @@
 
 ##  Setup & Run Locally
 
-###  Backend (REST API)
-
-1. **Clone the backend repository**
-   ```bash
-   git clone https://github.com/oderojohn/sky_survey_backend.git
-   cd survey-api
-   ```
-
-2. **Create and activate a virtual environment (recommended)**
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows use `venv\Scripts\activate`
-   ```
-
-3. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. **Apply migrations and start the server**
-   ```bash
-   python manage.py migrate
-   python manage.py runserver
-   ```
-
-   The backend should now be running at [http://localhost:8000](http://localhost:8000)
-
----
-
 ### 💻 Frontend (React)
 
 1. **Clone the frontend repository**
